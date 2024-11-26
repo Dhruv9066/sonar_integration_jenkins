@@ -1,0 +1,33 @@
+pipeline {
+    agent any
+    environment {
+        SONAR_HOST_URL = 'http://4.240.90.28:9000'  
+        SONAR_SCANNER_HOME = tool 'sonar-scanner'    
+    }
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git 'https://github.com/Dhruv9066/java-sonarqube-helloworld-src.git'
+            }
+        }
+        stage('SonarQube Analysis') {
+            steps {
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'TOKEN')]) {
+                    sh """
+                        $SONAR_SCANNER_HOME/bin/sonar-scanner \
+                        -Dsonar.projectKey=java-sonarqube-helloworld-src \
+                        -Dsonar.sources=src \
+                        -Dsonar.host.url=$SONAR_HOST_URL \
+                        -Dsonar.login=$TOKEN \
+                        -Dsonar.java.binaries=compiled \
+                        -Dsonar.language=java
+                    """
+                }
+                timeout(time: 1, unit: 'HOURS') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+    }
+}
+
